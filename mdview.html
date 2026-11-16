@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mdview — Markdown 预览 / 编辑</title>
+<style>
+:root{--bg:#fff;--bar:#f7f7f8;--border:#e3e3e6;--text:#242427;--muted:#71717a;--accent:#2f6feb;--soft:#f5f6f8}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;color:var(--text);background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+.bar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bar);border-bottom:1px solid var(--border);flex:none;flex-wrap:wrap}
+.bar.foot{border-bottom:0;border-top:1px solid var(--border);justify-content:space-between;font-size:12px;color:var(--muted);padding:5px 12px}
+button{font:inherit;font-size:13px;padding:5px 11px;border:1px solid var(--border);background:#fff;color:var(--text);border-radius:6px;cursor:pointer}
+button:hover{border-color:#c2c2c9}
+button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.sep{width:1px;height:20px;background:var(--border);margin:0 4px}
+.spacer{flex:1}
+.chk{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer}
+.base{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.base input{font:inherit;font-size:12px;width:190px;padding:4px 8px;border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--text)}
+#status{font-size:12px;color:var(--muted);text-align:right}
+.wrap{flex:1;display:flex;min-height:0}
+#toc{width:230px;flex:none;overflow:auto;border-right:1px solid var(--border);padding:16px 12px;background:var(--bar);font-size:13px}
+#toc[hidden]{display:none}
+#toc a{display:block;padding:4px 8px;color:var(--muted);text-decoration:none;border-radius:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#toc a:hover{background:var(--soft);color:var(--text)}
+#toc .lv1{font-weight:500;color:var(--text)}
+#toc .lv2{padding-left:20px}
+#toc .lv3,#toc .lv4,#toc .lv5,#toc .lv6{padding-left:34px;font-size:12px}
+#view{flex:1;min-width:0;overflow:auto;padding:34px 40px 120px;font-size:15.5px;line-height:1.85}
+#view>.inner{max-width:820px;margin:0 auto}
+#view h1,#view h2,#view h3,#view h4,#view h5,#view h6{line-height:1.35;margin:1.6em 0 .6em;font-weight:600;scroll-margin-top:20px}
+#view h1{font-size:2em;border-bottom:1px solid var(--border);padding-bottom:.3em;margin-top:0}
+#view h2{font-size:1.55em;border-bottom:1px solid var(--border);padding-bottom:.25em}
+#view h3{font-size:1.28em}
+#view h4{font-size:1.1em}
+#view p{margin:.75em 0}
+#view a{color:var(--accent)}
+#view img{max-width:100%;border-radius:6px}
+#view code{background:var(--soft);padding:2px 5px;border-radius:4px;font:13px Consolas,"Cascadia Mono",monospace}
+#view pre{background:var(--soft);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:auto;line-height:1.6}
+#view pre code{background:none;padding:0;font-size:13px}
+#view blockquote{margin:1em 0;padding:2px 16px;border-left:3px solid #cfd4dc;color:var(--muted)}
+#view blockquote p{margin:.3em 0}
+#view hr{border:0;border-top:1px solid var(--border);margin:1.8em 0}
+#view table{border-collapse:collapse;margin:1em 0;max-width:100%}
+#view th,#view td{border:1px solid var(--border);padding:6px 12px}
+#view th{background:var(--soft)}
+#view ul,#view ol{padding-left:1.7em}
+#view li{margin:.25em 0}
+#view li.task{list-style:none;margin-left:-1.5em}
+#view li.task input{margin-right:4px}
+.tok-c{color:#8a8f98}.tok-s{color:#0a7d55}.tok-n{color:#a05a00}.tok-k{color:#2f6feb}
+#view .empty{color:var(--muted);text-align:center;margin-top:20vh;line-height:2}
+#view .empty b{display:block;font-size:17px;color:var(--text);font-weight:500;margin-bottom:8px}
+#editor{flex:1;min-width:0;display:none;border:0;outline:0;resize:none;padding:26px 34px 120px;font:14px/1.8 Consolas,"Cascadia Mono","Microsoft YaHei",monospace;color:var(--text);background:#fff;tab-size:2}
+.wrap.mode-code #editor,.wrap.mode-split #editor{display:block}
+.wrap.mode-code #view{display:none}
+.wrap.mode-split #editor{border-right:1px solid var(--border)}
+.wrap.mode-split #view{padding:26px 34px 120px}
+.wrap.mode-split #view>.inner{max-width:none}
+</style>
+</head>
+<body>
+<div class="bar">
+  <button id="btnOpen">打开 .md</button>
+  <button id="btnSave">导出 .md</button>
+  <button id="btnReload">刷新</button>
+  <span class="sep"></span>
+  <button data-mode="preview" class="on">预览</button>
+  <button data-mode="split">分栏</button>
+  <button data-mode="code">代码</button>
+  <span class="sep"></span>
+  <label class="chk"><input type="checkbox" id="follow" checked> 跟随 :w</label>
+  <button id="btnToc">大纲</button>
+  <label class="base">图片根目录 <input id="base" placeholder="可选，如 J:/blog/posts"></label>
+  <span class="spacer"></span>
+  <span id="status">等待打开文件</span>
+</div>
+<div class="wrap mode-preview" id="wrap">
+  <nav id="toc" hidden></nav>
+  <textarea id="editor" spellcheck="false" placeholder="在这里写 Markdown…&#10;&#10;Ctrl+S：已绑定文件则直接覆盖写回（像 :w），未绑定则下载 .md&#10;Ctrl+E 切换代码 / 预览，Ctrl+P 回预览"></textarea>
+  <article id="view"><div class="inner empty"><b>Markdown 预览 / 编辑</b>点「打开 .md」或把文件拖进来<br>预览模式下 vim 里 :w 会自动刷新；点「代码」或「分栏」可直接编辑<br><span style="font-size:12px">已绑定文件按 Ctrl+S 直接替换原文件（不下载、不另存），未绑定则导出为 .md 下载</span></div></article>
+</div>
+<div class="bar foot"><span id="fileinfo">未打开文件</span><span id="count">—</span></div>
+<script>
+"use strict";
+
+/* ---------- 纯函数：Markdown 渲染（零依赖） ---------- */
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function safeUrl(u){
+  var s = u.trim();
+  if (/^[a-z]:[\/\\]/i.test(s)) return s;
+  if (/^(https?:\/\/|mailto:|#|\/|data:image\/)/i.test(s)) return s;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(s)) return "#";
+  return s;
+}
+function inline(s){
+  var t = esc(s), codes = [];
+  t = t.replace(/`([^`]+)`/g, function(_, c){
+    codes.push("<code>" + c + "</code>");
+    return "\u0001" + (codes.length - 1) + "\u0001";
+  });
+  t = t.replace(/!\[([^\]]*)\]\(\s*([^)\s]+)(?:\s+&quot;[^&]*&quot;)?\s*\)/g, function(_, alt, src){
+    return '<img alt="' + alt + '" src="' + safeUrl(src) + '">';
+  });
+  t = t.replace(/\[([^\]]+)\]\(\s*([^)\s]+)(?:\s+&quot;[^&]*&quot;)?\s*\)/g, function(_, txt, url){
+    return '<a href="' + safeUrl(url) + '" target="_blank" rel="noopener">' + txt + "</a>";
+  });
+  t = t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+  t = t.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+  t = t.replace(/\u0001(\d+)\u0001/g, function(_, i){ return codes[+i]; });
+  return t;
+}
+function hl(code){
+  var re = /(\/\/[^\n]*|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|\b(\d+(?:\.\d+)?)\b|\b(fn|let|mut|pub|use|mod|impl|struct|enum|match|if|else|for|while|return|const|static|async|await|function|var|class|def|import|from|export|default|interface|type|new|this|null|true|false|None|True|False|self|Self|where|move|ref|in|as|break|continue|loop|trait|crate|super|match|Some|Ok|Err)\b/g;
+  var out = "", last = 0, m;
+  while ((m = re.exec(code)) !== null){
+    out += esc(code.slice(last, m.index));
+    if (m[1]) out += '<span class="tok-c">' + esc(m[1]) + "</span>";
+    else if (m[2]) out += '<span class="tok-s">' + esc(m[2]) + "</span>";
+    else if (m[3]) out += '<span class="tok-n">' + esc(m[3]) + "</span>";
+    else out += '<span class="tok-k">' + esc(m[4]) + "</span>";
+    last = re.lastIndex;
+  }
+  return out + esc(code.slice(last));
+}
+function md2html(src){
+  var lines = String(src).replace(/\r\n?/g, "\n").split("\n"), out = [], para = [], i = 0;
+  function cells(row){
+    return row.trim().replace(/^\||\|$/g, "").split("|").map(function(s){ return s.trim(); });
+  }
+  function flush(){
+    if (para.length){ out.push("<p>" + inline(para.join(" ")) + "</p>"); para = []; }
+  }
+  while (i < lines.length){
+    var line = lines[i];
+    var fence = line.match(/^```\s*([\w+-]*)\s*$/);
+    if (fence){
+      flush();
+      var lang = fence[1] || "", buf = [];
+      i++;
+      while (i < lines.length && !/^```\s*$/.test(lines[i])){ buf.push(lines[i]); i++; }
+      i++;
+      out.push("<pre><code" + (lang ? ' class="lang-' + esc(lang) + '"' : "") + ">" + hl(buf.join("\n")) + "</code></pre>");
+      continue;
+    }
+    if (/^\s*$/.test(line)){ flush(); i++; continue; }
+    var h = line.match(/^(#{1,6})\s+(.*)$/);
+    if (h){ flush(); var n = h[1].length; out.push("<h" + n + ">" + inline(h[2]) + "</h" + n + ">"); i++; continue; }
+    if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)){ flush(); out.push("<hr>"); i++; continue; }
+    if (/^\s*\|/.test(line) && i + 1 < lines.length && /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(lines[i + 1])){
+      flush();
+      var head = cells(line);
+      var align = cells(lines[i + 1]).map(function(s){
+        return /^:-+:$/.test(s) ? "center" : /-+:$/.test(s) ? "right" : /^:-/.test(s) ? "left" : "";
+      });
+      i += 2;
+      var rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])){ rows.push(cells(lines[i])); i++; }
+      var t = "<table><thead><tr>" + head.map(function(c, j){
+        return "<th" + (align[j] ? ' style="text-align:' + align[j] + '"' : "") + ">" + inline(c) + "</th>";
+      }).join("") + "</tr></thead><tbody>";
+      t += rows.map(function(r){
+        return "<tr>" + r.map(function(c, j){
+          return "<td" + (align[j] ? ' style="text-align:' + align[j] + '"' : "") + ">" + inline(c) + "</td>";
+        }).join("") + "</tr>";
+      }).join("");
+      out.push(t + "</tbody></table>");
+      continue;
+    }
+    if (/^\s*>/.test(line)){
+      flush();
+      var quote = [];
+      while (i < lines.length && /^\s*>/.test(lines[i])){ quote.push(lines[i].replace(/^\s*>\s?/, "")); i++; }
+      out.push("<blockquote>" + md2html(quote.join("\n")) + "</blockquote>");
+      continue;
+    }
+    if (/^\s*([-*+]|\d+\.)\s+/.test(line)){
+      flush();
+      var ordered = /^\s*\d+\.\s+/.test(line), items = [];
+      while (i < lines.length && /^\s*([-*+]|\d+\.)\s+/.test(lines[i])){
+        var body = lines[i].replace(/^\s*(?:[-*+]|\d+\.)\s+/, "");
+        var task = body.match(/^\[([ xX])\]\s*(.*)$/);
+        items.push(task
+          ? '<li class="task"><input type="checkbox" disabled' + (task[1].toLowerCase() === "x" ? " checked" : "") + "> " + inline(task[2]) + "</li>"
+          : "<li>" + inline(body) + "</li>");
+        i++;
+      }
+      var tag = ordered ? "ol" : "ul";
+      out.push("<" + tag + ">" + items.join("") + "</" + tag + ">");
+      continue;
+    }
+    para.push(line.trim());
+    i++;
+  }
+  flush();
+  return out.join("\n");
+}
+/* ---------- 纯函数结束 ---------- */
+
+var $ = function(id){ return document.getElementById(id); };
+var view = $("view"), toc = $("toc"), editor = $("editor"), wrap = $("wrap"), inner = null;
+var handle = null, lastText = null, fileName = "", fails = 0, timer = null, renderTimer = null;
+var mode = "preview", dirty = false;
+var FSA = typeof window.showOpenFilePicker === "function";
+
+function status(s){ $("status").textContent = s; }
+function timeNow(){ return new Date().toLocaleTimeString("zh-CN", { hour12: false }); }
+function anchorKey(el){ return el.tagName + ":" + (el.textContent || "").slice(0, 32); }
+function currentAnchor(){
+  if (!inner) return null;
+  var kids = inner.children;
+  for (var i = 0; i < kids.length; i++){
+    var r = kids[i].getBoundingClientRect();
+    if (r.bottom > 80) return { key: anchorKey(kids[i]), top: r.top };
+  }
+  return null;
+}
+function restore(a){
+  if (!a || !inner) return;
+  var kids = inner.children;
+  for (var i = 0; i < kids.length; i++){
+    if (anchorKey(kids[i]) === a.key){
+      view.scrollTop += kids[i].getBoundingClientRect().top - a.top;
+      return;
+    }
+  }
+}
+function fixImages(){
+  var base = $("base").value.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+  if (!inner) return;
+  var imgs = inner.querySelectorAll("img");
+  for (var i = 0; i < imgs.length; i++){
+    var src = imgs[i].getAttribute("data-src") || imgs[i].getAttribute("src");
+    imgs[i].setAttribute("data-src", src);
+    if (!src || /^(https?:|data:|file:|#|\/)/i.test(src)) continue;
+    if (/^[a-z]:[\/\\]/i.test(src)) imgs[i].src = "file:///" + src.replace(/\\/g, "/");
+    else if (base) imgs[i].src = "file:///" + base.replace(/^\/+/, "") + "/" + src.replace(/^\.\//, "");
+  }
+}
+function buildToc(){
+  if (!inner) return;
+  var hs = inner.querySelectorAll("h1,h2,h3,h4,h5,h6"), html = "";
+  for (var i = 0; i < hs.length; i++){
+    hs[i].id = "sec-" + i;
+    html += '<a class="lv' + hs[i].tagName.charAt(1) + '" href="#sec-' + i + '">' + esc(hs[i].textContent) + "</a>";
+  }
+  toc.innerHTML = html || '<span style="color:var(--muted)">（无标题）</span>';
+}
+function updateFoot(){
+  var s;
+  if (!fileName) s = "未打开文件";
+  else if (!handle) s = fileName + " · 未绑定（保存=下载）";
+  else if (dirty) s = fileName + " · 有未保存修改";
+  else if (mode !== "preview") s = fileName + " · 编辑中（跟随暂停）";
+  else s = fileName + " · 跟随 :w 中";
+  $("fileinfo").textContent = s;
+  $("fileinfo").style.color = dirty ? "#8a5a00" : "";
+}
+function updateSaveLabel(){
+  $("btnSave").textContent = handle ? "保存 :w" : "导出 .md";
+  $("btnSave").title = handle
+    ? "直接覆盖写回原文件（不下载、不另存，像 vim 的 :w）"
+    : "下载为 .md 文件";
+}
+function setDirty(v){
+  dirty = v;
+  updateFoot();
+  if (v) status("未保存 · 跟随已暂停，Ctrl+S 写回");
+}
+function render(text){
+  var a = currentAnchor();
+  view.innerHTML = '<div class="inner">' + (md2html(text) || '<p class="empty">（空文档）</p>') + "</div>";
+  inner = view.firstElementChild;
+  buildToc();
+  fixImages();
+  restore(a);
+  if (!dirty) editor.value = text;
+  $("count").textContent = text.replace(/\s/g, "").length + " 字 · " + text.split("\n").length + " 行";
+  updateFoot();
+}
+async function loadHandle(h){
+  handle = h;
+  fileName = h.name;
+  lastText = null;
+  fails = 0;
+  dirty = false;
+  updateSaveLabel();
+  updateFoot();
+  await refresh();
+}
+async function refresh(){
+  if (!handle) return;
+  try {
+    var f = await handle.getFile();
+    var text = await f.text();
+    fails = 0;
+    if (text === lastText) return;
+    lastText = text;
+    render(text);
+    status("已同步 · " + timeNow());
+  } catch (e) {
+    fails++;
+    if (fails >= 2){
+      status("读取中断：若 vim 以替换方式写文件，请重新打开，或在 vim 里 :set backupcopy=yes");
+    } else {
+      status("读取失败：" + (e.name || e.message));
+    }
+  }
+}
+async function openFile(){
+  if (!FSA){ status("请用 Edge / Chrome 打开本文件"); return; }
+  try {
+    var picked = await window.showOpenFilePicker({
+      multiple: false,
+      types: [
+        { description: "Markdown", accept: { "text/markdown": [".md", ".markdown", ".mdown"] } },
+        { description: "纯文本", accept: { "text/plain": [".txt"] } }
+      ]
+    });
+    await loadHandle(picked[0]);
+  } catch (e) {
+    if (e.name !== "AbortError") status("打开失败：" + e.message);
+  }
+}
+
+/* ---------- 编辑 / 写回 / 导出 ---------- */
+function canFollow(){
+  return $("follow").checked && !!handle && mode === "preview" && !dirty;
+}
+function setMode(m){
+  mode = m;
+  wrap.className = "wrap mode-" + m;
+  var btns = document.querySelectorAll("[data-mode]");
+  for (var i = 0; i < btns.length; i++) btns[i].classList.toggle("on", btns[i].getAttribute("data-mode") === m);
+  if (m !== "code") render(dirty ? editor.value : (lastText || ""));
+  updateFoot();
+  if (m !== "preview") status("编辑模式 · 跟随已暂停，Ctrl+S 写回后恢复");
+  else if (dirty) status("有未保存修改 · 跟随暂停，Ctrl+S 写回后恢复");
+  else status("预览模式 · 跟随 :w 已恢复");
+}
+async function ensureWrite(h){
+  var opt = { mode: "readwrite" };
+  try {
+    if (await h.queryPermission(opt) === "granted") return true;
+    return await h.requestPermission(opt) === "granted";
+  } catch (e) { return false; }
+}
+function downloadMd(text){
+  var name = fileName || "untitled.md";
+  if (!/\.(md|markdown|mdown|txt)$/i.test(name)) name += ".md";
+  var url = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
+  var a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  return name;
+}
+async function save(){
+  var text = editor.value;
+  if (!handle){
+    var name = downloadMd(text);
+    lastText = text;
+    setDirty(false);
+    status("已下载 " + name + "（未绑定本地文件）");
+    return;
+  }
+  try {
+    if (!await ensureWrite(handle)) throw new Error("未获得写入权限");
+    var w = await handle.createWritable();
+    await w.write(text);
+    await w.close();
+    lastText = text;
+    setDirty(false);
+    render(text);
+    status("已写回 " + fileName + " · " + timeNow());
+  } catch (e) {
+    var fallback = downloadMd(text);
+    status("写回失败（" + (e.name || e.message) + "）→ 已下载 " + fallback + "，原文件未改动");
+  }
+}
+
+$("btnOpen").addEventListener("click", openFile);
+$("btnSave").addEventListener("click", save);
+$("btnReload").addEventListener("click", async function(){
+  if (dirty && !confirm("有未保存的修改，放弃并从磁盘重新读取？")) return;
+  setDirty(false);
+  lastText = null;
+  if (handle) await refresh();
+  else status("未绑定本地文件，无法从磁盘刷新");
+});
+$("btnToc").addEventListener("click", function(){
+  toc.hidden = !toc.hidden;
+  this.classList.toggle("on", !toc.hidden);
+});
+$("base").addEventListener("input", fixImages);
+var modeBtns = document.querySelectorAll("[data-mode]");
+for (var k = 0; k < modeBtns.length; k++){
+  modeBtns[k].addEventListener("click", function(){ setMode(this.getAttribute("data-mode")); });
+}
+editor.addEventListener("input", function(){
+  setDirty(true);
+  if (mode === "split"){
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(function(){ render(editor.value); }, 150);
+  }
+});
+editor.addEventListener("keydown", function(e){
+  if (e.key === "Tab"){
+    e.preventDefault();
+    var s = editor.selectionStart, t = editor.selectionEnd;
+    editor.setRangeText("  ", s, t, "end");
+    editor.dispatchEvent(new Event("input"));
+  }
+});
+window.addEventListener("dragover", function(e){ e.preventDefault(); });
+window.addEventListener("drop", async function(e){
+  e.preventDefault();
+  var item = e.dataTransfer && e.dataTransfer.items && e.dataTransfer.items[0];
+  if (!item) return;
+  if (item.getAsFileSystemHandle){
+    try {
+      var h = await item.getAsFileSystemHandle();
+      if (h && h.kind === "file"){ await loadHandle(h); return; }
+    } catch (err) {}
+  }
+  var f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f){
+    handle = null;
+    fileName = f.name;
+    dirty = false;
+    lastText = await f.text();
+    render(lastText);
+    updateSaveLabel();
+    updateFoot();
+    status("已读取 " + f.name + "（只读，Ctrl+S 会下载 .md）");
+  }
+});
+document.addEventListener("keydown", function(e){
+  var key = e.key.toLowerCase();
+  if (e.ctrlKey || e.metaKey){
+    if (key === "s"){ e.preventDefault(); save(); }
+    else if (key === "o"){ e.preventDefault(); openFile(); }
+    else if (key === "e"){ e.preventDefault(); setMode(mode === "code" ? "preview" : "code"); }
+    else if (key === "p"){ e.preventDefault(); setMode("preview"); }
+  }
+  if (e.key === "F5"){ e.preventDefault(); $("btnReload").click(); }
+});
+window.addEventListener("beforeunload", function(e){
+  if (dirty){ e.preventDefault(); e.returnValue = ""; }
+});
+timer = setInterval(function(){
+  if (canFollow()) refresh();
+}, 400);
+updateSaveLabel();
+updateFoot();
+status(FSA ? "就绪 · 拖入 .md 或点「打开 .md」" : "请用 Edge / Chrome 打开本文件");
+</script>
+</body>
+</html>
