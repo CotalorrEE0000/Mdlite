@@ -38,6 +38,7 @@ button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 #view p{margin:.75em 0}
 #view a{color:var(--accent)}
 #view img{max-width:100%;border-radius:6px}
+#view img.img-broken{display:inline-block;min-width:220px;min-height:44px;padding:8px 10px;border:1px dashed #d9534f;border-radius:6px;background:#fff6f5;color:#b3372e;font-size:12px;vertical-align:middle}
 #view code{background:var(--soft);padding:2px 5px;border-radius:4px;font:13px Consolas,"Cascadia Mono",monospace}
 #view pre{background:var(--soft);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow:auto;line-height:1.6}
 #view pre code{background:none;padding:0;font-size:13px}
@@ -236,11 +237,21 @@ function fixImages(){
   if (!inner) return;
   var imgs = inner.querySelectorAll("img");
   for (var i = 0; i < imgs.length; i++){
-    var src = imgs[i].getAttribute("data-src") || imgs[i].getAttribute("src");
-    imgs[i].setAttribute("data-src", src);
+    var im = imgs[i];
+    var src = im.getAttribute("data-src") || im.getAttribute("src");
+    im.setAttribute("data-src", src);
+    im.classList.remove("img-broken");
+    im.removeAttribute("title");
+    im.onerror = function(){
+      var raw = this.getAttribute("data-src") || this.getAttribute("src") || "(空)";
+      this.classList.add("img-broken");
+      this.title = "图片未找到：" + raw + "\n当前解析为 " + this.src
+        + "\n→ 把图片放到 HTML 同目录，或在顶栏「图片根目录」填入 .md 所在目录（如 J:/Tools/Mdlite）";
+      status("图片未找到 · 当前解析为 " + this.src + " · 请填「图片根目录」");
+    };
     if (!src || /^(https?:|data:|file:|#|\/)/i.test(src)) continue;
-    if (/^[a-z]:[\/\\]/i.test(src)) imgs[i].src = "file:///" + src.replace(/\\/g, "/");
-    else if (base) imgs[i].src = "file:///" + base.replace(/^\/+/, "") + "/" + src.replace(/^\.\//, "");
+    if (/^[a-z]:[\/\\]/i.test(src)) im.src = "file:///" + src.replace(/\\/g, "/");
+    else if (base) im.src = "file:///" + base.replace(/^\/+/, "") + "/" + src.replace(/^\.\//, "");
   }
 }
 function buildToc(){
@@ -401,7 +412,15 @@ $("btnToc").addEventListener("click", function(){
   toc.hidden = !toc.hidden;
   this.classList.toggle("on", !toc.hidden);
 });
-$("base").addEventListener("input", fixImages);
+var BASE_KEY = "mdview.imgbase";
+try {
+  var savedBase = localStorage.getItem(BASE_KEY);
+  if (savedBase) $("base").value = savedBase;
+} catch (e) {}
+$("base").addEventListener("input", function(){
+  try { localStorage.setItem(BASE_KEY, this.value.trim()); } catch (e) {}
+  fixImages();
+});
 var modeBtns = document.querySelectorAll("[data-mode]");
 for (var k = 0; k < modeBtns.length; k++){
   modeBtns[k].addEventListener("click", function(){ setMode(this.getAttribute("data-mode")); });
