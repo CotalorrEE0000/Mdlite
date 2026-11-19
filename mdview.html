@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>mdview — Markdown 预览 / 编辑</title>
+<title>mdview — Markdown Preview / Editor</title>
 <style>
 :root{--bg:#fff;--bar:#f7f7f8;--border:#e3e3e6;--text:#242427;--muted:#71717a;--accent:#2f6feb;--soft:#f5f6f8}
 *{box-sizing:border-box}
@@ -65,26 +65,27 @@ button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 </head>
 <body>
 <div class="bar">
-  <button id="btnOpen">打开 .md</button>
-  <button id="btnSave">导出 .md</button>
-  <button id="btnReload">刷新</button>
+  <button id="btnOpen" data-i18n="open">Open .md</button>
+  <button id="btnSave" data-i18n="exportMd">Export .md</button>
+  <button id="btnReload" data-i18n="reload">Reload</button>
   <span class="sep"></span>
-  <button data-mode="preview" class="on">预览</button>
-  <button data-mode="split">分栏</button>
-  <button data-mode="code">代码</button>
+  <button data-mode="preview" class="on" data-i18n="preview">Preview</button>
+  <button data-mode="split" data-i18n="split">Split</button>
+  <button data-mode="code" data-i18n="code">Code</button>
   <span class="sep"></span>
-  <label class="chk"><input type="checkbox" id="follow" checked> 跟随 :w</label>
-  <button id="btnToc">大纲</button>
-  <label class="base">图片根目录 <input id="base" placeholder="可选，如 J:/blog/posts"></label>
+  <label class="chk"><input type="checkbox" id="follow" checked> <span data-i18n="follow">Follow :w</span></label>
+  <button id="btnToc" data-i18n="toc">Outline</button>
+  <label class="base"><span data-i18n="imgBase">Image root</span> <input id="base" data-i18n-ph="imgBasePh" placeholder="Optional, e.g. J:/blog/posts"></label>
   <span class="spacer"></span>
-  <span id="status">等待打开文件</span>
+  <button id="btnLang">中文</button>
+  <span id="status" data-i18n="statusIdle">Waiting for a file</span>
 </div>
 <div class="wrap mode-preview" id="wrap">
   <nav id="toc" hidden></nav>
-  <textarea id="editor" spellcheck="false" placeholder="在这里写 Markdown…&#10;&#10;Ctrl+S：已绑定文件则直接覆盖写回（像 :w），未绑定则下载 .md&#10;Ctrl+E 切换代码 / 预览，Ctrl+P 回预览"></textarea>
-  <article id="view"><div class="inner empty"><b>Markdown 预览 / 编辑</b>点「打开 .md」或把文件拖进来<br>预览模式下 vim 里 :w 会自动刷新；点「代码」或「分栏」可直接编辑<br><span style="font-size:12px">已绑定文件按 Ctrl+S 直接替换原文件（不下载、不另存），未绑定则导出为 .md 下载</span></div></article>
+  <textarea id="editor" spellcheck="false" data-i18n-ph="editorPh" placeholder="Write Markdown here…"></textarea>
+  <article id="view"></article>
 </div>
-<div class="bar foot"><span id="fileinfo">未打开文件</span><span id="count">—</span></div>
+<div class="bar foot"><span id="fileinfo">No file open</span><span id="count">—</span></div>
 <script>
 "use strict";
 
@@ -204,6 +205,118 @@ function md2html(src){
 }
 /* ---------- 纯函数结束 ---------- */
 
+/* ---------- i18n：默认英文，按钮切换，偏好持久化 ---------- */
+var I18N = {
+  en: {
+    title: "mdview — Markdown Preview / Editor",
+    open: "Open .md", save: "Save :w", exportMd: "Export .md", reload: "Reload",
+    preview: "Preview", split: "Split", code: "Code",
+    follow: "Follow :w", toc: "Outline",
+    imgBase: "Image root", imgBasePh: "Optional, e.g. J:/blog/posts",
+    statusIdle: "Waiting for a file",
+    ready: "Ready · drop a .md or click \"Open .md\"",
+    needChromium: "Please open this file in Edge / Chrome",
+    editorPh: "Write Markdown here…\n\nCtrl+S: overwrite the bound file (like :w), or download .md\nCtrl+E toggles Code / Preview, Ctrl+P returns to Preview",
+    welcome: "<b>Markdown Preview / Editor</b>Click \"Open .md\" or drop a file here<br>In Preview mode, saving in vim with :w refreshes automatically; switch to Code or Split to edit<br><span style=\"font-size:12px\">With a bound file, Ctrl+S overwrites it in place — no download, no duplicate; otherwise a .md is downloaded</span>",
+    noFile: "No file open",
+    notBound: " · not bound (save = download)",
+    unsaved: " · unsaved changes",
+    editing: " · editing (follow paused)",
+    following: " · following :w",
+    saveTitle: "Overwrite the original file in place (no download, no duplicate — like vim's :w)",
+    exportTitle: "Download as a .md file",
+    dirtyStatus: "Unsaved · follow paused, press Ctrl+S to write back",
+    emptyDoc: "(empty document)",
+    tocEmpty: "No headings",
+    countUnit: "{n} chars · {l} lines",
+    synced: "Synced · {time}",
+    readInterrupted: "Read interrupted: if vim writes via rename, reopen the file or use :set backupcopy=yes",
+    readFailed: "Read failed: {err}",
+    openFailed: "Open failed: {err}",
+    typeMarkdown: "Markdown", typePlain: "Plain text",
+    editModeStatus: "Edit mode · follow paused until Ctrl+S writes back",
+    dirtyModeStatus: "Unsaved changes · follow paused until Ctrl+S writes back",
+    previewModeStatus: "Preview mode · following :w restored",
+    noWritePerm: "Write permission not granted",
+    downloaded: "Downloaded {name} (no local file bound)",
+    wroteBack: "Wrote back to {name} · {time}",
+    writeFailed: "Write failed ({err}) → downloaded {name} instead; original file unchanged",
+    confirmDiscard: "Discard unsaved changes and reload from disk?",
+    noHandleReload: "No local file bound; cannot reload from disk",
+    dropped: "Loaded {name} (read-only; Ctrl+S downloads a .md)",
+    imgMissingTitle: "Image not found: {raw}\nResolved as {url}\n→ Put the image in the HTML folder, or set Image root to the .md folder (e.g. J:/Tools/Mdlite)",
+    imgMissingStatus: "Image not found · resolved as {url} · set Image root",
+    imgEmptyAlt: "(empty)",
+    langButton: "中文", langTitle: "Switch the interface to Chinese"
+  },
+  zh: {
+    title: "mdview — Markdown 预览 / 编辑",
+    open: "打开 .md", save: "保存 :w", exportMd: "导出 .md", reload: "刷新",
+    preview: "预览", split: "分栏", code: "代码",
+    follow: "跟随 :w", toc: "大纲",
+    imgBase: "图片根目录", imgBasePh: "可选，如 J:/blog/posts",
+    statusIdle: "等待打开文件",
+    ready: "就绪 · 拖入 .md 或点「打开 .md」",
+    needChromium: "请用 Edge / Chrome 打开本文件",
+    editorPh: "在这里写 Markdown…\n\nCtrl+S：已绑定文件则直接覆盖写回（像 :w），未绑定则下载 .md\nCtrl+E 切换代码 / 预览，Ctrl+P 回预览",
+    welcome: "<b>Markdown 预览 / 编辑</b>点「打开 .md」或把文件拖进来<br>预览模式下 vim 里 :w 会自动刷新；点「代码」或「分栏」可直接编辑<br><span style=\"font-size:12px\">已绑定文件按 Ctrl+S 直接替换原文件（不下载、不另存），未绑定则导出为 .md 下载</span>",
+    noFile: "未打开文件",
+    notBound: " · 未绑定（保存=下载）",
+    unsaved: " · 有未保存修改",
+    editing: " · 编辑中（跟随暂停）",
+    following: " · 跟随 :w 中",
+    saveTitle: "直接覆盖写回原文件（不下载、不另存，像 vim 的 :w）",
+    exportTitle: "下载为 .md 文件",
+    dirtyStatus: "未保存 · 跟随已暂停，Ctrl+S 写回",
+    emptyDoc: "（空文档）",
+    tocEmpty: "（无标题）",
+    countUnit: "{n} 字 · {l} 行",
+    synced: "已同步 · {time}",
+    readInterrupted: "读取中断：若 vim 以替换方式写文件，请重新打开，或在 vim 里 :set backupcopy=yes",
+    readFailed: "读取失败：{err}",
+    openFailed: "打开失败：{err}",
+    typeMarkdown: "Markdown", typePlain: "纯文本",
+    editModeStatus: "编辑模式 · 跟随已暂停，Ctrl+S 写回后恢复",
+    dirtyModeStatus: "有未保存修改 · 跟随暂停，Ctrl+S 写回后恢复",
+    previewModeStatus: "预览模式 · 跟随 :w 已恢复",
+    noWritePerm: "未获得写入权限",
+    downloaded: "已下载 {name}（未绑定本地文件）",
+    wroteBack: "已写回 {name} · {time}",
+    writeFailed: "写回失败（{err}）→ 已下载 {name}，原文件未改动",
+    confirmDiscard: "有未保存的修改，放弃并从磁盘重新读取？",
+    noHandleReload: "未绑定本地文件，无法从磁盘刷新",
+    dropped: "已读取 {name}（只读，Ctrl+S 会下载 .md）",
+    imgMissingTitle: "图片未找到：{raw}\n当前解析为 {url}\n→ 把图片放到 HTML 同目录，或在顶栏「图片根目录」填入 .md 所在目录（如 J:/Tools/Mdlite）",
+    imgMissingStatus: "图片未找到 · 当前解析为 {url} · 请填「图片根目录」",
+    imgEmptyAlt: "(空)",
+    langButton: "English", langTitle: "切换界面语言为英文"
+  }
+};
+var LANG_KEY = "mdview.lang";
+var lang = "en";
+try {
+  var savedLang = localStorage.getItem(LANG_KEY);
+  if (savedLang === "zh" || savedLang === "en") lang = savedLang;
+} catch (e) {}
+function t(key, vars){
+  var s = (I18N[lang] || I18N.en)[key];
+  if (s === undefined) s = I18N.en[key];
+  if (s === undefined) return key;
+  if (vars) for (var k in vars) s = s.split("{" + k + "}").join(String(vars[k]));
+  return s;
+}
+function applyI18n(){
+  document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+  document.title = t("title");
+  var els = document.querySelectorAll("[data-i18n]");
+  for (var i = 0; i < els.length; i++) els[i].textContent = t(els[i].getAttribute("data-i18n"));
+  var phs = document.querySelectorAll("[data-i18n-ph]");
+  for (var j = 0; j < phs.length; j++) phs[j].placeholder = t(phs[j].getAttribute("data-i18n-ph"));
+  $("btnLang").textContent = t("langButton");
+  $("btnLang").title = t("langTitle");
+}
+/* ---------- i18n 结束 ---------- */
+
 var $ = function(id){ return document.getElementById(id); };
 var view = $("view"), toc = $("toc"), editor = $("editor"), wrap = $("wrap"), inner = null;
 var handle = null, lastText = null, fileName = "", fails = 0, timer = null, renderTimer = null;
@@ -211,7 +324,7 @@ var mode = "preview", dirty = false;
 var FSA = typeof window.showOpenFilePicker === "function";
 
 function status(s){ $("status").textContent = s; }
-function timeNow(){ return new Date().toLocaleTimeString("zh-CN", { hour12: false }); }
+function timeNow(){ return new Date().toLocaleTimeString(lang === "zh" ? "zh-CN" : "en-US", { hour12: false }); }
 function anchorKey(el){ return el.tagName + ":" + (el.textContent || "").slice(0, 32); }
 function currentAnchor(){
   if (!inner) return null;
@@ -232,6 +345,10 @@ function restore(a){
     }
   }
 }
+function showWelcome(){
+  view.innerHTML = '<div class="inner empty">' + t("welcome") + "</div>";
+  inner = view.firstElementChild;
+}
 function fixImages(){
   var base = $("base").value.trim().replace(/\\/g, "/").replace(/\/+$/, "");
   if (!inner) return;
@@ -243,11 +360,10 @@ function fixImages(){
     im.classList.remove("img-broken");
     im.removeAttribute("title");
     im.onerror = function(){
-      var raw = this.getAttribute("data-src") || this.getAttribute("src") || "(空)";
+      var raw = this.getAttribute("data-src") || this.getAttribute("src") || t("imgEmptyAlt");
       this.classList.add("img-broken");
-      this.title = "图片未找到：" + raw + "\n当前解析为 " + this.src
-        + "\n→ 把图片放到 HTML 同目录，或在顶栏「图片根目录」填入 .md 所在目录（如 J:/Tools/Mdlite）";
-      status("图片未找到 · 当前解析为 " + this.src + " · 请填「图片根目录」");
+      this.title = t("imgMissingTitle", { raw: raw, url: this.src });
+      status(t("imgMissingStatus", { url: this.src }));
     };
     if (!src || /^(https?:|data:|file:|#|\/)/i.test(src)) continue;
     if (/^[a-z]:[\/\\]/i.test(src)) im.src = "file:///" + src.replace(/\\/g, "/");
@@ -261,39 +377,46 @@ function buildToc(){
     hs[i].id = "sec-" + i;
     html += '<a class="lv' + hs[i].tagName.charAt(1) + '" href="#sec-' + i + '">' + esc(hs[i].textContent) + "</a>";
   }
-  toc.innerHTML = html || '<span style="color:var(--muted)">（无标题）</span>';
+  toc.innerHTML = html || '<span style="color:var(--muted)">' + t("tocEmpty") + "</span>";
 }
 function updateFoot(){
   var s;
-  if (!fileName) s = "未打开文件";
-  else if (!handle) s = fileName + " · 未绑定（保存=下载）";
-  else if (dirty) s = fileName + " · 有未保存修改";
-  else if (mode !== "preview") s = fileName + " · 编辑中（跟随暂停）";
-  else s = fileName + " · 跟随 :w 中";
+  if (!fileName) s = t("noFile");
+  else if (!handle) s = fileName + t("notBound");
+  else if (dirty) s = fileName + t("unsaved");
+  else if (mode !== "preview") s = fileName + t("editing");
+  else s = fileName + t("following");
   $("fileinfo").textContent = s;
   $("fileinfo").style.color = dirty ? "#8a5a00" : "";
 }
 function updateSaveLabel(){
-  $("btnSave").textContent = handle ? "保存 :w" : "导出 .md";
-  $("btnSave").title = handle
-    ? "直接覆盖写回原文件（不下载、不另存，像 vim 的 :w）"
-    : "下载为 .md 文件";
+  $("btnSave").textContent = handle ? t("save") : t("exportMd");
+  $("btnSave").title = handle ? t("saveTitle") : t("exportTitle");
 }
 function setDirty(v){
   dirty = v;
   updateFoot();
-  if (v) status("未保存 · 跟随已暂停，Ctrl+S 写回");
+  if (v) status(t("dirtyStatus"));
 }
 function render(text){
   var a = currentAnchor();
-  view.innerHTML = '<div class="inner">' + (md2html(text) || '<p class="empty">（空文档）</p>') + "</div>";
+  view.innerHTML = '<div class="inner">' + (md2html(text) || '<p class="empty">' + t("emptyDoc") + "</p>") + "</div>";
   inner = view.firstElementChild;
   buildToc();
   fixImages();
   restore(a);
   if (!dirty) editor.value = text;
-  $("count").textContent = text.replace(/\s/g, "").length + " 字 · " + text.split("\n").length + " 行";
+  $("count").textContent = t("countUnit", {
+    n: text.replace(/\s/g, "").length,
+    l: text.split("\n").length
+  });
   updateFoot();
+}
+function refreshStatus(){
+  if (!FSA) status(t("needChromium"));
+  else if (dirty) status(t("dirtyStatus"));
+  else if (mode !== "preview") status(t("editModeStatus"));
+  else status(t("ready"));
 }
 async function loadHandle(h){
   handle = h;
@@ -314,29 +437,26 @@ async function refresh(){
     if (text === lastText) return;
     lastText = text;
     render(text);
-    status("已同步 · " + timeNow());
+    status(t("synced", { time: timeNow() }));
   } catch (e) {
     fails++;
-    if (fails >= 2){
-      status("读取中断：若 vim 以替换方式写文件，请重新打开，或在 vim 里 :set backupcopy=yes");
-    } else {
-      status("读取失败：" + (e.name || e.message));
-    }
+    if (fails >= 2) status(t("readInterrupted"));
+    else status(t("readFailed", { err: e.name || e.message }));
   }
 }
 async function openFile(){
-  if (!FSA){ status("请用 Edge / Chrome 打开本文件"); return; }
+  if (!FSA){ status(t("needChromium")); return; }
   try {
     var picked = await window.showOpenFilePicker({
       multiple: false,
       types: [
-        { description: "Markdown", accept: { "text/markdown": [".md", ".markdown", ".mdown"] } },
-        { description: "纯文本", accept: { "text/plain": [".txt"] } }
+        { description: t("typeMarkdown"), accept: { "text/markdown": [".md", ".markdown", ".mdown"] } },
+        { description: t("typePlain"), accept: { "text/plain": [".txt"] } }
       ]
     });
     await loadHandle(picked[0]);
   } catch (e) {
-    if (e.name !== "AbortError") status("打开失败：" + e.message);
+    if (e.name !== "AbortError") status(t("openFailed", { err: e.message }));
   }
 }
 
@@ -351,9 +471,9 @@ function setMode(m){
   for (var i = 0; i < btns.length; i++) btns[i].classList.toggle("on", btns[i].getAttribute("data-mode") === m);
   if (m !== "code") render(dirty ? editor.value : (lastText || ""));
   updateFoot();
-  if (m !== "preview") status("编辑模式 · 跟随已暂停，Ctrl+S 写回后恢复");
-  else if (dirty) status("有未保存修改 · 跟随暂停，Ctrl+S 写回后恢复");
-  else status("预览模式 · 跟随 :w 已恢复");
+  if (m !== "preview") status(t("editModeStatus"));
+  else if (dirty) status(t("dirtyModeStatus"));
+  else status(t("previewModeStatus"));
 }
 async function ensureWrite(h){
   var opt = { mode: "readwrite" };
@@ -381,32 +501,42 @@ async function save(){
     var name = downloadMd(text);
     lastText = text;
     setDirty(false);
-    status("已下载 " + name + "（未绑定本地文件）");
+    status(t("downloaded", { name: name }));
     return;
   }
   try {
-    if (!await ensureWrite(handle)) throw new Error("未获得写入权限");
+    if (!await ensureWrite(handle)) throw new Error(t("noWritePerm"));
     var w = await handle.createWritable();
     await w.write(text);
     await w.close();
     lastText = text;
     setDirty(false);
     render(text);
-    status("已写回 " + fileName + " · " + timeNow());
+    status(t("wroteBack", { name: fileName, time: timeNow() }));
   } catch (e) {
     var fallback = downloadMd(text);
-    status("写回失败（" + (e.name || e.message) + "）→ 已下载 " + fallback + "，原文件未改动");
+    status(t("writeFailed", { err: e.name || e.message, name: fallback }));
   }
 }
 
+$("btnLang").addEventListener("click", function(){
+  lang = lang === "en" ? "zh" : "en";
+  try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+  applyI18n();
+  updateSaveLabel();
+  updateFoot();
+  if (lastText === null && !dirty) showWelcome();
+  else render(dirty ? editor.value : (lastText || ""));
+  refreshStatus();
+});
 $("btnOpen").addEventListener("click", openFile);
 $("btnSave").addEventListener("click", save);
 $("btnReload").addEventListener("click", async function(){
-  if (dirty && !confirm("有未保存的修改，放弃并从磁盘重新读取？")) return;
+  if (dirty && !confirm(t("confirmDiscard"))) return;
   setDirty(false);
   lastText = null;
   if (handle) await refresh();
-  else status("未绑定本地文件，无法从磁盘刷新");
+  else status(t("noHandleReload"));
 });
 $("btnToc").addEventListener("click", function(){
   toc.hidden = !toc.hidden;
@@ -435,8 +565,8 @@ editor.addEventListener("input", function(){
 editor.addEventListener("keydown", function(e){
   if (e.key === "Tab"){
     e.preventDefault();
-    var s = editor.selectionStart, t = editor.selectionEnd;
-    editor.setRangeText("  ", s, t, "end");
+    var selStart = editor.selectionStart, selEnd = editor.selectionEnd;
+    editor.setRangeText("  ", selStart, selEnd, "end");
     editor.dispatchEvent(new Event("input"));
   }
 });
@@ -460,7 +590,7 @@ window.addEventListener("drop", async function(e){
     render(lastText);
     updateSaveLabel();
     updateFoot();
-    status("已读取 " + f.name + "（只读，Ctrl+S 会下载 .md）");
+    status(t("dropped", { name: f.name }));
   }
 });
 document.addEventListener("keydown", function(e){
@@ -479,9 +609,11 @@ window.addEventListener("beforeunload", function(e){
 timer = setInterval(function(){
   if (canFollow()) refresh();
 }, 400);
+applyI18n();
+showWelcome();
 updateSaveLabel();
 updateFoot();
-status(FSA ? "就绪 · 拖入 .md 或点「打开 .md」" : "请用 Edge / Chrome 打开本文件");
+refreshStatus();
 </script>
 </body>
 </html>

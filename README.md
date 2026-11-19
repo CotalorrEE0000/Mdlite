@@ -1,63 +1,77 @@
 # Mdlite
 
-一款轻量化的 Markdown 查看器，基于 HTML。单文件、零依赖、零安装：双击 `mdview.html` 用 Edge 或 Chrome 打开即可使用，不需要服务器、不需要联网、不需要账号，也没有付费功能。
+English | [简体中文](./README.zh.md)
+
+A lightweight Markdown viewer built on HTML. Single file, zero dependencies, zero installation: double-click `mdview.html` and open it in Edge or Chrome — no server, no network, no account, no paid features.
 
 ![view](./view.png)
 
-## 功能
+## Features
 
-- **实时跟随预览**：打开本地 `.md` 后自动跟随文件变化（400 ms 轮询），在 vim 里 `:w` 即刷新，无需再按按钮
-- **三态视图**：预览 / 分栏 / 代码 一键切换；分栏下左写右看，编辑时预览实时更新
-- **直接写回**：已绑定文件时按 `Ctrl+S` 直接覆盖原文件，像 vim 的 `:w` —— 不下载、不另存、不生成 `(1)` 副本
-- **导出下载**：未绑定文件（或只读拖入）时导出为 `.md` 文件下载
-- **Markdown 渲染**：标题、段落、粗体、斜体、删除线、行内代码、代码块、有序/无序列表、任务列表、引用、表格、分割线、链接、图片
-- **代码高亮**：内置轻量分词器，对关键字、字符串、注释、数字着色，字符串内的关键字不会误着色
-- **大纲导航**：侧栏目录，点击跳转
-- **滚动位置保持**：刷新后按当前可见块还原位置，写长文不会每保存一次就跳回顶部
-- **本地图片**：相对路径默认按 **HTML 文件所在目录** 解析；图片不在同目录时在顶栏填「图片根目录」（会记住，只需填一次），`D:/...` 这类绝对路径直接可用；加载失败会给出带实际解析路径的提示而非静默破图
-- **编辑保护**：进入编辑模式自动暂停跟随，避免磁盘内容盖掉正在输入的文字；有未保存内容时离开页面会提示；写回失败自动改为下载副本，原文件不被破坏
-- **安全**：渲染前统一做 HTML 转义，链接与图片 URL 带协议白名单
+- **Bilingual UI**: English by default. Click the `中文` button in the toolbar to switch the whole interface to Chinese (click `English` to switch back). The choice is remembered in `localStorage`.
+- **Live-follow preview**: after opening a local `.md`, the view follows file changes automatically (400 ms polling). Saving with `:w` in vim refreshes it — no button press needed.
+- **Three view modes**: Preview / Split / Code, one click each. Split shows the editor on the left and a live-updating preview on the right.
+- **Direct write-back**: with a bound file, `Ctrl+S` overwrites the original in place, like vim's `:w` — no download, no Save As, no `(1)` duplicate.
+- **Export**: without a bound file (or after a read-only drop), saves the content as a downloaded `.md`.
+- **Markdown rendering**: headings, paragraphs, bold, italic, strikethrough, inline code, fenced code blocks, ordered/unordered lists, task lists, blockquotes, tables, horizontal rules, links and images.
+- **Syntax highlighting**: built-in lightweight tokenizer colors keywords, strings, comments and numbers; keywords inside strings are not colored by mistake.
+- **Outline navigation**: sidebar table of contents, click a heading to jump.
+- **Scroll position retention**: restores by the currently visible block after a refresh, so long documents do not jump back to the top on every save.
+- **Local images**: relative paths resolve against the **HTML file's directory** by default. If the image lives elsewhere, set **Image root** in the toolbar (remembered, one-time only); `D:/...` absolute paths work directly. A failed load shows a hint containing the resolved path instead of a silent broken image.
+- **Editing protection**: entering edit mode pauses live-follow so disk content cannot overwrite what you are typing; leaving with unsaved changes triggers a warning; a failed write-back downloads a copy instead, leaving the original file untouched.
+- **Safety**: everything is HTML-escaped before rendering, and link / image URLs pass a protocol allowlist.
 
-## 使用
+## Usage
 
-1. 双击 `mdview.html`，用 Edge 或 Chrome 打开（`file://` 即可，无需起服务）。
-2. 点「打开 .md」或把文件拖进窗口；首次浏览器会询问一次文件访问权限，允许即可。
-3. 预览模式下，在 vim 中保存该文件，预览会自动同步。
-4. 点「代码」或「分栏」进入编辑；编辑期间跟随自动暂停，状态栏会提示。
-5. 按 `Ctrl+S`：已绑定文件则直接覆盖写回，未绑定则下载 `.md`。
-6. 图片写法 `![说明](./view.png)`。相对路径以 **HTML 所在目录** 为基准，最省事是把图片和 `mdview.html` 放同一目录；若图片在 `.md` 同目录、而 HTML 在别处，就在「图片根目录」填入该目录（如 `J:/Tools/Mdlite`，填一次会记住）。`J:/Tools/Mdlite/view.png` 这类绝对路径可直接写。
+1. Double-click `mdview.html` and open it in Edge or Chrome (`file://` is enough; no server needed).
+2. Click `Open .md` or drop a file into the window; the browser asks for file access permission once — allow it.
+3. In Preview mode, saving that file in vim refreshes the preview automatically.
+4. Click `Code` or `Split` to edit; live-follow pauses while editing and the status bar says so.
+5. Press `Ctrl+S`: with a bound file it overwrites it in place; otherwise the `.md` is downloaded.
+6. Images use `![alt](./view.png)`. Relative paths are based on the **HTML file's directory**, so the simplest setup is to keep the image next to `mdview.html`. If the image sits next to the `.md` while the HTML is elsewhere, set **Image root** to that directory (e.g. `J:/Tools/Mdlite`; remembered after one entry). Absolute paths such as `J:/Tools/Mdlite/view.png` also work.
+7. The interface starts in **English**. Click `中文` in the toolbar to switch every label, status message and hint to Chinese; the button then reads `English` and switches back. The preference is stored in `localStorage` — clear browser site data to return to the English default. The document's language and the UI language are independent.
 
-想让它像独立小软件一样使用，可以给快捷方式加 `--app` 参数，例如 `"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --app="file:///D://mdview.html"`，打开后是无地址栏的独立窗口，适合与 vim 并排。
+To use it like a standalone app, add `--app` to a shortcut, e.g. `"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --app="file:///D:/mdview.html"`. This opens a clean window without an address bar, which sits nicely beside vim.
 
-### 快捷键
+### Keyboard shortcuts
 
-| 快捷键 | 作用 |
+| Shortcut | Action |
 | --- | --- |
-| `Ctrl+O` | 打开本地 `.md` |
-| `Ctrl+S` | 保存（已绑定=覆盖写回 / 未绑定=导出下载） |
-| `Ctrl+E` | 代码 / 预览 切换 |
-| `Ctrl+P` | 回到预览 |
-| `F5` | 放弃未保存修改，从磁盘重新读取 |
-| `Tab` | 编辑区缩进两格 |
+| `Ctrl+O` | Open a local `.md` |
+| `Ctrl+S` | Save (bound = overwrite in place / unbound = download) |
+| `Ctrl+E` | Toggle Code / Preview |
+| `Ctrl+P` | Return to Preview |
+| `F5` | Discard unsaved changes and re-read from disk |
+| `Tab` | Indent by two spaces in the editor |
 
-### 文件读写行为
+### File read / write behavior
 
-| 当前状态 | 顶栏按钮 | 按下后的行为 |
+| State | Toolbar button | Result |
 | --- | --- | --- |
-| 通过「打开 .md」或拖放绑定了本地文件 | 保存 :w | 直接覆盖原文件，不产生下载 |
-| 未打开文件 / 只读静态预览 / 编辑空文档 | 导出 .md | 下载为 `.md` 文件 |
-| 已绑定但写入权限被拒 | 保存 :w | 提示写回失败，并自动下载副本，原文件保持不变 |
+| Bound to a local file via `Open .md` or drag & drop | `Save :w` | Overwrites the original file; no download |
+| No file open / read-only static preview / editing a blank document | `Export .md` | Downloads a `.md` file |
+| Bound, but write permission denied | `Save :w` | Reports the failure and downloads a copy; the original is unchanged |
 
+## Project structure
 
-## 实现状态
+| File | Purpose |
+| --- | --- |
+| `mdview.html` | The entire tool — one self-contained HTML file, no build step |
+| `README.md` | English documentation (default) |
+| `README.zh.md` | Chinese documentation |
+| `view.png` | Screenshot |
+| `LICENSE` | Apache License 2.0 |
 
-上述功能均已实现，当前版本为单文件交付，无构建步骤、无依赖安装、无配置文件。
+## Implementation status
 
-已知限制：
+All features listed above are implemented. The current release is a single-file delivery with no build step, no dependency installation and no configuration file. There are no third-party runtime dependencies: the Markdown renderer, syntax highlighter and styles are all written from scratch, and only standard browser APIs are used.
 
-- 依赖 File System Access API，需要 Chromium 内核浏览器（Edge / Chrome）；Firefox、Safari 无法使用文件直读直写。
-- `file://` 下首次打开文件、首次写入各需要用户授权一次。
-- 若 vim 以「写临时文件再重命名」方式保存（`backupcopy=no`），文件句柄会失效，页面会检测并提示；可改用 `:set backupcopy=yes` 或重新打开文件。
-- 编辑模式与「跟随 :w」互斥：编辑期间跟随暂停，保存写回后自动恢复；未保存内容切回预览时仍保持暂停，直到写回或点「刷新」放弃修改。
-- Markdown 渲染器为内置精简实现，覆盖常用 CommonMark / GFM 语法，不承诺对全部边界语法完全兼容；不含 LaTeX 公式、Mermaid 图表。
-- File System Access API 不向页面暴露 `.md` 的完整路径，因此相对图片无法自动按 `.md` 所在目录解析；图片与 HTML 不同目录时需手动填「图片根目录」。
+Known limitations:
+
+- Requires the File System Access API, i.e. a Chromium-based browser (Edge / Chrome). Firefox and Safari cannot read or write local files directly.
+- Under `file://`, the first file open and the first write each require a one-time permission grant.
+- If vim saves by writing a temporary file and renaming it (`backupcopy=no`), the file handle becomes invalid; the page detects and reports it. Use `:set backupcopy=yes` or reopen the file.
+- Editing and live-follow are mutually exclusive: follow pauses while editing and resumes after a successful write-back; unsaved content keeps it paused until write-back or `F5`.
+- The built-in Markdown renderer is a compact implementation covering common CommonMark / GFM syntax. Full edge-case compatibility is not guaranteed; LaTeX math and Mermaid diagrams are not supported.
+- The File System Access API does not expose the full path of a `.md`, so relative images cannot be resolved against the `.md` directory automatically. Set **Image root** when the image and the HTML file are in different folders.
+- The UI language preference is stored in `localStorage`; clearing browser site data resets it to English.
