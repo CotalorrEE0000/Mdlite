@@ -4,7 +4,7 @@ English | [简体中文](./README.zh.md)
 
 A lightweight Markdown viewer built on HTML. Single file, zero dependencies, zero installation: double-click `mdview.html` and open it in Edge or Chrome — no server, no network, no account, no paid features.
 
-![view](./view.png)
+![view](./view_en.png)
 
 ## Features
 
